@@ -1,0 +1,324 @@
+/* 智慧渔场管理系统 - 华丽样式表 v2.0 */
+
+:root {
+    --primary-gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --danger-gradient: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --success-gradient: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --info-gradient: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --shadow: 0 10px 30px rgba(0,0,0,0.1);
+    --shadow-lg: 0 15px 40px rgba(0,0,0,0.15);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', 'Microsoft YaHei', 'Helvetica Neue', Arial, sans-serif;
+    color: #333;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e8eef5 100%);
+    line-height: 1.6;
+}
+
+/* 导航栏样式 */
+.navbar {
+    background: linear-gradient(90deg, #0066cc 0%, #00ccff 100%) !important;
+    box-shadow: var(--shadow);
+    backdrop-filter: blur(10px);
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.4em;
+    color: white !important;
+    letter-spacing: 0.5px;
+    transition: all 0.3s ease;
+}
+
+/* 侧边栏样式 */
+.sidebar {
+    background: white;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    height: calc(100vh - 60px);
+    padding:20px 0;
+    position: sticky;
+    top: 60px;
+}
+
+.sidebar .nav-link {
+    color: #555;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+}
+
+.sidebar .nav-link:hover {
+    background-color: #f0f0f0;
+    color: #667eea;
+    border-left-color: #667eea;
+    padding-left: 30px;
+}
+
+.sidebar .nav-link:active {
+    background-color: #e8e8ff;
+    color: #667eea;
+}
+
+/* 主内容区 */
+.content {
+    padding: 30px;
+}
+
+.content h2 {
+    color: #333;
+    font-weight: 600;
+    margin-bottom: 10px;
+}
+
+/* 卡片样式 */
+.card {
+    border: none;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+    margin-bottom: 20px;
+}
+
+.card:hover {
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.card-header {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    border-radius: 8px 8px 0 0;
+    padding: 15px 20px;
+}
+
+.card-header h5 {
+    margin: 0;
+    font-weight: 600;
+}
+
+.card-body {
+    padding: 20px;
+}
+
+/* 按钮样式 */
+.btn {
+    border-radius: 4px;
+    padding: 0.5rem 1.5rem;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    border: none;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.btn-success {
+    background-color: #2ecc71;
+}
+
+.btn-success:hover {
+    background-color: #27ae60;
+    transform: translateY(-2px);
+}
+
+.btn-info {
+    background-color: #3498db;
+}
+
+.btn-warning {
+    background-color: #f39c12;
+}
+
+.btn-danger {
+    background-color: #e74c3c;
+}
+
+/* 表格样式 */
+.table {
+    background: white;
+}
+
+.table thead th {
+    background-color: #f8f9fa;
+    border-top: none;
+    border-bottom: 2px solid #667eea;
+    font-weight: 600;
+    color: #333;
+}
+
+.table tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+/* 徽章样式 */
+.badge {
+    display: inline-block;
+    padding: 0.4rem 0.8rem;
+    border-radius: 4px;
+    font-weight: 500;
+}
+
+.badge-success {
+    background-color: #2ecc71;
+    color: white;
+}
+
+.badge-warning {
+    background-color: #f39c12;
+    color: white;
+}
+
+.badge-danger {
+    background-color: #e74c3c;
+    color: white;
+}
+
+.badge-info {
+    background-color: #3498db;
+    color: white;
+}
+
+/* 表单控制 */
+.form-control {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 0.5rem 0.75rem;
+    transition: all 0.3s ease;
+}
+
+.form-control:focus {
+    border-color: #667eea;
+    box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+}
+
+/* 模态框样式 */
+.modal-header {
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #ddd;
+}
+
+.modal-header h5 {
+    color: #333;
+}
+
+/* 数据卡片特殊样式 */
+.data-card {
+    background: white;
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    transition: all 0.3s ease;
+}
+
+.data-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+}
+
+.data-card h5 {
+    color: #666;
+    margin-bottom: 10px;
+    font-size: 0.95rem;
+}
+
+.data-card h2 {
+    margin: 10px 0;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.data-card p {
+    color: #999;
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+    .sidebar {
+        display: none;
+    }
+    
+    .content {
+        padding: 15px;
+    }
+    
+    h2 {
+        font-size: 1.3rem !important;
+    }
+}
+
+/* ECharts容器 */
+#chart-container {
+    width: 100%;
+    height: 400px;
+}
+
+/* 脚部样式 */
+.footer {
+    background-color: #333;
+    color: white;
+    padding: 30px 20px;
+    text-align: center;
+    margin-top: 50px;
+}
+
+.footer p {
+    margin: 0;
+}
+
+/* 加载动画 */
+.spinner {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #667eea;
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* 提示类 */
+.alert {
+    border-radius: 4px;
+    border: none;
+}
+
+.alert-success {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    color: #0c5460;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    color: #856404;
+}

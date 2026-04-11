@@ -1,0 +1,739 @@
+{% extends "base.html" %} {% block title %}水质监测 - 智慧渔场管理系统{%
+endblock %} {% block extra_css %}
+<style>
+  .water-quality-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+
+  .quality-indicator {
+    background: linear-gradient(
+      135deg,
+      var(--card-bg) 0%,
+      rgba(0, 102, 204, 0.1) 100%
+    );
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    transition: all 0.3s ease;
+  }
+
+  .quality-indicator:hover {
+    border-color: var(--primary-color);
+    box-shadow: var(--shadow-lg);
+  }
+
+  .quality-header {
+    display: flex;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .quality-icon {
+    font-size: 2rem;
+    margin-right: 12px;
+    width: 60px;
+    height: 60px;
+    background: rgba(0, 212, 255, 0.1);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-color);
+  }
+
+  .quality-name {
+    flex: 1;
+  }
+
+  .quality-name h5 {
+    margin: 0;
+    color: var(--text-primary);
+    font-weight: 600;
+  }
+
+  .quality-name p {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+  }
+
+  .quality-gauge {
+    margin-bottom: 15px;
+  }
+
+  .gauge-bar {
+    background: linear-gradient(
+      90deg,
+      var(--border-color),
+      rgba(0, 212, 255, 0.2)
+    );
+    height: 8px;
+    border-radius: 4px;
+    overflow: hidden;
+    margin-bottom: 8px;
+  }
+
+  .gauge-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #00ff88, #00d4ff);
+    border-radius: 4px;
+    transition: width 0.5s ease;
+  }
+
+  .gauge-fill.warning {
+    background: linear-gradient(90deg, #ffaa00, #ff6600);
+  }
+
+  .gauge-fill.danger {
+    background: linear-gradient(90deg, #ff4444, #ff0000);
+  }
+
+  .gauge-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+  }
+
+  .gauge-value {
+    color: var(--primary-color);
+    font-weight: 700;
+    font-size: 1.2rem;
+  }
+
+  .gauge-range {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+  }
+
+  .quality-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 12px;
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    border-radius: 6px;
+    color: #00ff88;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  .quality-status.warning {
+    background: rgba(255, 170, 0, 0.1);
+    border-color: rgba(255, 170, 0, 0.3);
+    color: #ffaa00;
+  }
+
+  .quality-status.danger {
+    background: rgba(255, 68, 68, 0.1);
+    border-color: rgba(255, 68, 68, 0.3);
+    color: #ff4444;
+  }
+
+  .status-dot {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: currentColor;
+    animation: pulse 2s infinite;
+  }
+
+  .tabs-container {
+    margin-bottom: 20px;
+  }
+
+  .nav-tabs {
+    border-bottom: 2px solid var(--border-color);
+    display: flex;
+    gap: 10px;
+  }
+
+  .nav-tabs .nav-link {
+    color: var(--text-secondary);
+    border: none;
+    border-bottom: 3px solid transparent;
+    padding: 12px 20px;
+    transition: all 0.3s ease;
+  }
+
+  .nav-tabs .nav-link:hover {
+    color: var(--primary-color);
+  }
+
+  .nav-tabs .nav-link.active {
+    color: var(--primary-color);
+    border-bottom-color: var(--primary-color);
+  }
+
+  .tab-content {
+    padding: 20px 0;
+  }
+
+  .pond-selector {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+
+  .pond-btn {
+    padding: 10px;
+    background: var(--card-bg);
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+  }
+
+  .pond-btn:hover {
+    border-color: var(--primary-color);
+    background: rgba(0, 212, 255, 0.1);
+  }
+
+  .pond-btn.active {
+    background: linear-gradient(
+      90deg,
+      var(--secondary-color),
+      var(--primary-color)
+    );
+    border-color: var(--primary-color);
+    color: white;
+  }
+</style>
+{% endblock %} {% block content %}
+<div class="page-header">
+  <div
+    style="display: flex; align-items: center; justify-content: space-between"
+  >
+    <div>
+      <h1><i class="fas fa-flask-vial"></i> 水质监测</h1>
+      <p>实时监测水质参数，确保养殖环境最优</p>
+    </div>
+    <button class="refresh-btn" onclick="refreshWaterQuality()">
+      <i class="fas fa-sync-alt"></i> 刷新
+    </button>
+  </div>
+  <div class="data-timestamp">
+    最后更新: <span id="updateTime">--:--:--</span>
+  </div>
+</div>
+
+<!-- 鱼池选择器 -->
+{% if ponds %}
+<div class="tabs-container">
+  <h6 style="color: var(--text-secondary); margin-bottom: 10px">
+    选择要监测的鱼池：
+  </h6>
+  <div class="pond-selector">
+    <button class="pond-btn active" onclick="selectPond(this, 'all')">
+      <i class="fas fa-water"></i> 全部鱼池
+    </button>
+    {% for pond in ponds %}
+    <button class="pond-btn" onclick="selectPond(this, '{{ pond.id }}')">
+      <i class="fas fa-chart-line"></i> {{ pond.pond_name }}
+    </button>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- 实时水质指标 -->
+<div class="water-quality-grid">
+  {% set default_pond_id = ponds[0].id if ponds else 0 %} {% set pond_data =
+  pond_quality_data.get(default_pond_id, {}) %}
+
+  <!-- 水温 -->
+  <div class="quality-indicator">
+    <div class="quality-header">
+      <div class="quality-icon">
+        <i class="fas fa-thermometer-half"></i>
+      </div>
+      <div class="quality-name">
+        <h5>水温</h5>
+        <p>Temperature</p>
+      </div>
+    </div>
+    <div class="quality-gauge" id="temperatureValue">
+      <div class="gauge-bar">
+        <div
+          class="gauge-fill"
+          style="width: {% if pond_data.temperature %}{{ (pond_data.temperature / 40) * 100 }}%{% else %}0%{% endif %}"
+        ></div>
+      </div>
+      <div class="gauge-info">
+        <span class="gauge-value"
+          >{{ pond_data.get('temperature', '--') }}</span
+        >
+        <span class="gauge-range">范围: 20-35°C</span>
+      </div>
+    </div>
+    <div class="quality-status">
+      <span class="status-dot"></span>
+      {% if pond_data.temperature and 20 <= pond_data.temperature <= 35 %}正常{%
+      else %}--{% endif %}
+    </div>
+  </div>
+
+  <!-- PH值 -->
+  <div class="quality-indicator">
+    <div class="quality-header">
+      <div class="quality-icon">
+        <i class="fas fa-flask"></i>
+      </div>
+      <div class="quality-name">
+        <h5>PH值</h5>
+        <p>Acidity Level</p>
+      </div>
+    </div>
+    <div class="quality-gauge" id="phValue">
+      <div class="gauge-bar">
+        <div
+          class="gauge-fill"
+          style="width: {% if pond_data.ph_value %}{{ (pond_data.ph_value / 14) * 100 }}%{% else %}0%{% endif %}"
+        ></div>
+      </div>
+      <div class="gauge-info">
+        <span class="gauge-value">{{ pond_data.get('ph_value', '--') }}</span>
+        <span class="gauge-range">范围: 6.0-8.5</span>
+      </div>
+    </div>
+    <div class="quality-status">
+      <span class="status-dot"></span>
+      {% if pond_data.ph_value and 6.0 <= pond_data.ph_value <= 8.5 %}正常{%
+      else %}--{% endif %}
+    </div>
+  </div>
+
+  <!-- 溶解氧 -->
+  <div class="quality-indicator">
+    <div class="quality-header">
+      <div class="quality-icon">
+        <i class="fas fa-wind"></i>
+      </div>
+      <div class="quality-name">
+        <h5>溶解氧</h5>
+        <p>Dissolved Oxygen</p>
+      </div>
+    </div>
+    <div class="quality-gauge" id="oxygenValue">
+      <div class="gauge-bar">
+        <div
+          class="gauge-fill"
+          style="width: {% if pond_data.dissolved_oxygen %}{{ (pond_data.dissolved_oxygen / 12) * 100 }}%{% else %}0%{% endif %}"
+        ></div>
+      </div>
+      <div class="gauge-info">
+        <span class="gauge-value"
+          >{{ pond_data.get('dissolved_oxygen', '--') }}</span
+        >
+        <span class="gauge-range">范围: 5-12 mg/L</span>
+      </div>
+    </div>
+    <div class="quality-status">
+      <span class="status-dot"></span>
+      {% if pond_data.dissolved_oxygen and pond_data.dissolved_oxygen >= 5
+      %}良好{% else %}--{% endif %}
+    </div>
+  </div>
+
+  <!-- 盐度 -->
+  <div class="quality-indicator">
+    <div class="quality-header">
+      <div class="quality-icon">
+        <i class="fas fa-droplet"></i>
+      </div>
+      <div class="quality-name">
+        <h5>盐度</h5>
+        <p>Salinity</p>
+      </div>
+    </div>
+    <div class="quality-gauge" id="salinityValue">
+      <div class="gauge-bar">
+        <div
+          class="gauge-fill"
+          style="width: {% if pond_data.salinity %}{{ (pond_data.salinity / 40) * 100 }}%{% else %}0%{% endif %}"
+        ></div>
+      </div>
+      <div class="gauge-info">
+        <span class="gauge-value">{{ pond_data.get('salinity', '--') }}</span>
+        <span class="gauge-range">范围: 0-40‰</span>
+      </div>
+    </div>
+    <div class="quality-status">
+      <span class="status-dot"></span>
+      正常
+    </div>
+  </div>
+
+  <!-- 氨氮 -->
+  <div class="quality-indicator">
+    <div class="quality-header">
+      <div class="quality-icon">
+        <i class="fas fa-atom"></i>
+      </div>
+      <div class="quality-name">
+        <h5>氨氮</h5>
+        <p>Ammonia Nitrogen</p>
+      </div>
+    </div>
+    <div class="quality-gauge" id="ammoniaValue">
+      <div class="gauge-bar">
+        <div
+          class="gauge-fill"
+          style="width: {% if pond_data.ammonia_nitrogen %}{{ (pond_data.ammonia_nitrogen / 1) * 100 }}%{% else %}0%{% endif %}"
+        ></div>
+      </div>
+      <div class="gauge-info">
+        <span class="gauge-value"
+          >{{ pond_data.get('ammonia_nitrogen', '--') }}</span
+        >
+        <span class="gauge-range">范围: 0-1 mg/L</span>
+      </div>
+    </div>
+    <div class="quality-status warning">
+      <span class="status-dot"></span>
+      {% if pond_data.ammonia_nitrogen and pond_data.ammonia_nitrogen > 0.5
+      %}需要关注{% else %}正常{% endif %}
+    </div>
+  </div>
+
+  <!-- 亚硝酸盐 -->
+  <div class="quality-indicator">
+    <div class="quality-header">
+      <div class="quality-icon">
+        <i class="fas fa-chemical"></i>
+      </div>
+      <div class="quality-name">
+        <h5>亚硝酸盐</h5>
+        <p>Nitrite Nitrogen</p>
+      </div>
+    </div>
+    <div class="quality-gauge" id="nitriteValue">
+      <div class="gauge-bar">
+        <div
+          class="gauge-fill"
+          style="width: {% if pond_data.nitrite_nitrogen %}{{ (pond_data.nitrite_nitrogen / 0.2) * 100 }}%{% else %}0%{% endif %}"
+        ></div>
+      </div>
+      <div class="gauge-info">
+        <span class="gauge-value"
+          >{{ pond_data.get('nitrite_nitrogen', '--') }}</span
+        >
+        <span class="gauge-range">范围: 0-0.2 mg/L</span>
+      </div>
+    </div>
+    <div class="quality-status">
+      <span class="status-dot"></span>
+      正常
+    </div>
+  </div>
+
+  <!-- 数据详细表格 -->
+  <div class="card">
+    <div class="card-header">
+      <h5><i class="fas fa-table"></i> 水质参数详细数据表</h5>
+    </div>
+    <div class="card-body">
+      <div class="table-responsive">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>水温 (°C)</th>
+              <th>PH值</th>
+              <th>溶解氧 (mg/L)</th>
+              <th>盐度 (‰)</th>
+              <th>氨氮 (mg/L)</th>
+              <th>亚硝酸盐 (mg/L)</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>2024-03-16 10:30</td>
+              <td><span style="color: var(--primary-color)">26.3</span></td>
+              <td><span style="color: var(--primary-color)">7.8</span></td>
+              <td><span style="color: #00ff88">8.2</span></td>
+              <td><span style="color: var(--primary-color)">14.5</span></td>
+              <td><span style="color: #ffaa00">3.6</span></td>
+              <td><span style="color: var(--primary-color)">1.4</span></td>
+              <td><button class="btn btn-sm btn-primary">查看</button></td>
+            </tr>
+            <tr>
+              <td>2024-03-16 08:30</td>
+              <td><span style="color: var(--primary-color)">25.8</span></td>
+              <td><span style="color: var(--primary-color)">7.9</span></td>
+              <td><span style="color: #00ff88">8.0</span></td>
+              <td><span style="color: var(--primary-color)">14.3</span></td>
+              <td><span style="color: #ffaa00">3.8</span></td>
+              <td><span style="color: var(--primary-color)">1.5</span></td>
+              <td><button class="btn btn-sm btn-primary">查看</button></td>
+            </tr>
+            <tr>
+              <td>2024-03-16 06:30</td>
+              <td><span style="color: var(--primary-color)">25.2</span></td>
+              <td><span style="color: var(--primary-color)">7.7</span></td>
+              <td><span style="color: #00ff88">8.4</span></td>
+              <td><span style="color: var(--primary-color)">14.1</span></td>
+              <td><span style="color: #ffaa00">3.5</span></td>
+              <td><span style="color: var(--primary-color)">1.3</span></td>
+              <td><button class="btn btn-sm btn-primary">查看</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 告警阈值设置 -->
+  <div class="card" style="margin-top: 20px">
+    <div class="card-header">
+      <h5><i class="fas fa-cog"></i> 告警阈值设置</h5>
+    </div>
+    <div class="card-body">
+      <div
+        style="
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          gap: 20px;
+        "
+      >
+        <div
+          style="
+            background: rgba(0, 212, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-color);
+          "
+        >
+          <label class="form-label">水温告警范围</label>
+          <div style="display: flex; gap: 10px; margin-bottom: 10px">
+            <input
+              type="number"
+              class="form-control"
+              placeholder="最低 °C"
+              value="18"
+            />
+            <input
+              type="number"
+              class="form-control"
+              placeholder="最高 °C"
+              value="32"
+            />
+          </div>
+          <button class="btn btn-sm btn-primary">保存</button>
+        </div>
+        <div
+          style="
+            background: rgba(0, 212, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-color);
+          "
+        >
+          <label class="form-label">溶解氧告警阈值</label>
+          <div style="display: flex; gap: 10px; margin-bottom: 10px">
+            <input
+              type="number"
+              class="form-control"
+              placeholder="最低值 mg/L"
+              value="5"
+            />
+          </div>
+          <button class="btn btn-sm btn-primary">保存</button>
+        </div>
+        <div
+          style="
+            background: rgba(0, 212, 255, 0.05);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid var(--primary-color);
+          "
+        >
+          <label class="form-label">PH值告警范围</label>
+          <div style="display: flex; gap: 10px; margin-bottom: 10px">
+            <input
+              type="number"
+              class="form-control"
+              placeholder="最低值"
+              value="6.0"
+              step="0.1"
+            />
+            <input
+              type="number"
+              class="form-control"
+              placeholder="最高值"
+              value="8.5"
+              step="0.1"
+            />
+          </div>
+          <button class="btn btn-sm btn-primary">保存</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  {% endblock %} {% block extra_js %}
+  <script>
+    let currentPondId = "{{ ponds[0].id if ponds else 0 }}";
+
+    function selectPond(element, pondId) {
+      document.querySelectorAll(".pond-btn").forEach((btn) => {
+        btn.classList.remove("active");
+      });
+      element.classList.add("active");
+      currentPondId = pondId;
+
+      if (pondId !== "all") {
+        refreshWaterQualityForPond(pondId);
+      }
+    }
+
+    // 刷新水质数据
+    function refreshWaterQuality() {
+      const btn = event.target.closest(".refresh-btn");
+      if (btn.classList.contains("loading")) return;
+
+      btn.classList.add("loading");
+
+      if (currentPondId && currentPondId !== "all") {
+        refreshWaterQualityForPond(currentPondId);
+      } else {
+        setTimeout(() => {
+          location.reload();
+        }, 500);
+      }
+    }
+
+    // 刷新指定鱼池的水质数据
+    function refreshWaterQualityForPond(pondId) {
+      fetch(`/api/water-quality-refresh/${pondId}`)
+        .then((response) => response.json())
+        .then((data) => {
+          if (data.status === "success") {
+            const wqData = data.data;
+
+            // 更新温度
+            updateGauge("temperatureValue", wqData.temperature, 40, "℃");
+
+            // 更新pH值
+            updateGauge("phValue", wqData.ph_value, 10, "");
+
+            // 更新溶解氧
+            updateGauge("oxygenValue", wqData.dissolved_oxygen, 12, "mg/L");
+
+            // 更新盐度
+            updateGauge("salinityValue", wqData.salinity, 40, "‰");
+
+            // 更新氨氮
+            updateGauge("ammoniaValue", wqData.ammonia_nitrogen, 1, "mg/L");
+
+            // 更新亚硝酸盐
+            updateGauge("nitriteValue", wqData.nitrite_nitrogen, 0.2, "mg/L");
+
+            // 更新时间戳
+            updateTimestamp();
+            showToast("数据已更新", "success");
+          } else {
+            showToast("数据更新失败: " + data.message, "danger");
+          }
+        })
+        .catch((error) => {
+          showToast("更新出错: " + error.message, "danger");
+        })
+        .finally(() => {
+          const btn = document.querySelector(".refresh-btn");
+          if (btn) {
+            btn.classList.remove("loading");
+          }
+        });
+    }
+
+    // 更新仪表盘数值
+    function updateGauge(elementId, value, max, unit) {
+      const element = document.getElementById(elementId);
+      if (element) {
+        const percent = Math.min((value / max) * 100, 100);
+        const fill = element.querySelector(".gauge-fill");
+        if (fill) {
+          fill.style.width = percent + "%";
+
+          // 根据值改变颜色
+          fill.classList.remove("warning", "danger");
+          if (percent > 80) {
+            fill.classList.add("danger");
+          } else if (percent > 60) {
+            fill.classList.add("warning");
+          }
+        }
+
+        const valueSpan = element.querySelector(".gauge-value");
+        if (valueSpan) {
+          valueSpan.textContent = value.toFixed(2);
+        }
+      }
+    }
+
+    // 更新时间戳
+    function updateTimestamp() {
+      const now = new Date();
+      const timeStr =
+        String(now.getHours()).padStart(2, "0") +
+        ":" +
+        String(now.getMinutes()).padStart(2, "0") +
+        ":" +
+        String(now.getSeconds()).padStart(2, "0");
+      const timeElement = document.getElementById("updateTime");
+      if (timeElement) {
+        timeElement.textContent = timeStr;
+      }
+    }
+
+    // 显示提示信息
+    function showToast(message, type = "info") {
+      const typeMap = {
+        success: "success",
+        danger: "danger",
+        warning: "warning",
+        info: "info",
+      };
+
+      const alertClass = `alert alert-${typeMap[type] || type}`;
+      const alertHtml = `<div class="${alertClass} alert-dismissible fade show" role="alert" style="position: fixed; top: 50px; right: 20px; z-index: 9999; min-width: 300px;">
+          ${message}
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+              <span aria-hidden="true">&times;</span>
+          </button>
+      </div>`;
+
+      const alertContainer = document.createElement("div");
+      alertContainer.innerHTML = alertHtml;
+      document.body.appendChild(alertContainer.firstChild);
+
+      setTimeout(() => {
+        const alert = document.querySelector(".alert");
+        if (alert) {
+          alert.remove();
+        }
+      }, 5000);
+    }
+
+    // 页面加载时更新时间戳
+    document.addEventListener("DOMContentLoaded", function () {
+      updateTimestamp();
+    });
+
+    // 定时更新时间戳
+    setInterval(updateTimestamp, 1000);
+  </script>
+  {% endblock %}
+</div>
