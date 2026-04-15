@@ -14,7 +14,7 @@ logger = logging.getLogger(__name__)
 class CustomATKLoraParser:
     """文本协议解析器 - 处理ATK-LORA-01的文本输出格式"""
     
-    # 字段映射表
+    # 字段映射表 - 更新为7种参数
     FIELD_MAPPING = {
         '温度值': 'temperature',
         '温度': 'temperature',
@@ -22,13 +22,19 @@ class CustomATKLoraParser:
         'pH值': 'ph_value',
         'PH': 'ph_value',
         'pH': 'ph_value',
-        '食物值': 'dissolved_oxygen',
-        '溶解氧': 'dissolved_oxygen',
-        'DO': 'dissolved_oxygen',
+        '食物值': 'food_value',
+        '食物': 'food_value',
+        'Food': 'food_value',
         'Salinity': 'salinity',
         '盐度': 'salinity',
+        '氧气值': 'dissolved_oxygen',
+        '溶解氧': 'dissolved_oxygen',
+        'DO': 'dissolved_oxygen',
+        'Oxygen': 'dissolved_oxygen',
+        'NH3': 'ammonia_nitrogen',
         '氨氮': 'ammonia_nitrogen',
         'Ammonia': 'ammonia_nitrogen',
+        'NO2': 'nitrite_nitrogen',
         '硝酸': 'nitrite_nitrogen',
         '亚硝': 'nitrite_nitrogen',
         'Nitrite': 'nitrite_nitrogen',
@@ -38,6 +44,7 @@ class CustomATKLoraParser:
     VALID_RANGES = {
         'temperature': (-10, 60),
         'ph_value': (0, 14),
+        'food_value': (0, 100),
         'dissolved_oxygen': (0, 100),
         'salinity': (0, 40),
         'ammonia_nitrogen': (0, 100),

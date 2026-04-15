@@ -169,15 +169,21 @@
         >
       </div>
       <div class="data-item">
+        <span class="label">🍗 食物值</span>
+        <span class="value"
+          >{{ water_quality_data.values[2] | default('--') }}</span
+        >
+      </div>
+      <div class="data-item">
         <span class="label">💨 溶解氧</span>
         <span class="value"
-          >{{ water_quality_data.values[2] | default('--') }} mg/L</span
+          >{{ water_quality_data.values[3] | default('--') }} mg/L</span
         >
       </div>
       <div class="data-item">
         <span class="label">🧂 盐度</span>
         <span class="value"
-          >{{ water_quality_data.values[3] | default('--') }}‰</span
+          >{{ water_quality_data.values[4] | default('--') }}‰</span
         >
       </div>
     </div>

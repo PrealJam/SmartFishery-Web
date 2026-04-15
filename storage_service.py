@@ -101,6 +101,7 @@ class SensorDataStorage:
                          pond_id: int,
                          temperature: float = None,
                          ph_value: float = None,
+                         food_value: float = None,
                          dissolved_oxygen: float = None,
                          salinity: float = None,
                          ammonia_nitrogen: float = None,
@@ -116,6 +117,7 @@ class SensorDataStorage:
             pond_id: 鱼池ID
             temperature: 温度
             ph_value: pH值
+            food_value: 食物值（新增的参数）
             dissolved_oxygen: 溶解氧
             salinity: 盐度
             ammonia_nitrogen: 氨氮
@@ -143,6 +145,7 @@ class SensorDataStorage:
                     # 存在则更新（UPDATE）
                     existing_record.temperature = temperature
                     existing_record.ph_value = ph_value
+                    existing_record.food_value = food_value
                     existing_record.dissolved_oxygen = dissolved_oxygen
                     existing_record.salinity = salinity
                     existing_record.ammonia_nitrogen = ammonia_nitrogen
@@ -150,13 +153,14 @@ class SensorDataStorage:
                     existing_record.recorded_at = timestamp
                     
                     self.db.session.commit()
-                    logger.info(f"♻️  已更新{pond.pond_name}的数据: T={temperature}°C, pH={ph_value}, DO={dissolved_oxygen}mg/L")
+                    logger.info(f"♻️  已更新{pond.pond_name}的数据: T={temperature}°C, pH={ph_value}, Food={food_value}, DO={dissolved_oxygen}mg/L")
                 else:
                     # 不存在则新增（INSERT）
                     sensor_data = self.SensorData(
                         pond_id=pond_id,
                         temperature=temperature,
                         ph_value=ph_value,
+                        food_value=food_value,
                         dissolved_oxygen=dissolved_oxygen,
                         salinity=salinity,
                         ammonia_nitrogen=ammonia_nitrogen,
@@ -166,7 +170,7 @@ class SensorDataStorage:
                     
                     self.db.session.add(sensor_data)
                     self.db.session.commit()
-                    logger.info(f"✨ 已新增{pond.pond_name}的数据: T={temperature}°C, pH={ph_value}, DO={dissolved_oxygen}mg/L")
+                    logger.info(f"✨ 已新增{pond.pond_name}的数据: T={temperature}°C, pH={ph_value}, Food={food_value}, DO={dissolved_oxygen}mg/L")
                 
                 return True
         

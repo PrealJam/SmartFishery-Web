@@ -94,6 +94,7 @@ class SensorData(db.Model):
     pond_id = db.Column(db.Integer, db.ForeignKey('ponds.id'), nullable=False)
     temperature = db.Column(db.Float)
     ph_value = db.Column(db.Float)
+    food_value = db.Column(db.Float)
     dissolved_oxygen = db.Column(db.Float)
     salinity = db.Column(db.Float)
     ammonia_nitrogen = db.Column(db.Float)
@@ -106,6 +107,7 @@ class SensorData(db.Model):
             'pond_id': self.pond_id,
             'temperature': self.temperature,
             'ph_value': self.ph_value,
+            'food_value': self.food_value,
             'dissolved_oxygen': self.dissolved_oxygen,
             'salinity': self.salinity,
             'ammonia_nitrogen': self.ammonia_nitrogen,
@@ -198,13 +200,15 @@ def init_hardware_collection():
                         pond_id=pond_id,
                         temperature=parsed_data.get('temperature'),
                         ph_value=parsed_data.get('ph_value'),
+                        food_value=parsed_data.get('food_value'),
                         dissolved_oxygen=parsed_data.get('dissolved_oxygen'),
                         salinity=parsed_data.get('salinity'),
                         ammonia_nitrogen=parsed_data.get('ammonia_nitrogen'),
                         nitrite_nitrogen=parsed_data.get('nitrite_nitrogen'),
                         timestamp=timestamp
                     )
-                    logger.debug(f"✓ 传感器数据已保存: T={parsed_data.get('temperature'):.2f}°C")
+                    logger.debug(f"✓ 传感器数据已保存: T={parsed_data.get('temperature'):.2f}°C, Food={parsed_data.get('food_value')}")
+
                 
             except Exception as e:
                 logger.error(f"数据回调处理失败: {e}")
@@ -263,12 +267,13 @@ def index():
                 'values': [
                     latest_sensor.temperature or 0,
                     latest_sensor.ph_value or 0,
+                    latest_sensor.food_value or 0,
                     latest_sensor.dissolved_oxygen or 0,
                     latest_sensor.salinity or 0
                 ]
             }
         else:
-            water_quality_data = {'values': [0, 0, 0, 0]}
+            water_quality_data = {'values': [0, 0, 0, 0, 0]}
         
         # 设备状态统计
         device_status_data = {
@@ -306,7 +311,7 @@ def index():
         print(f'Dashboard error: {e}')
         return render_template('dashboard.html',
                              pond_count=0, total_fish_count=0, total_devices=0,
-                             online_devices=0, devices=[], water_quality_data={'values': [0,0,0,0]},
+                             online_devices=0, devices=[], water_quality_data={'values': [0,0,0,0,0]},
                              device_status_data={'online': 0, 'offline': 0, 'running': 0},
                              recent_data={'temperature': [0]*12, 'oxygen': [0]*12},
                              now=datetime.now())
@@ -335,6 +340,7 @@ def water_quality_page():
                 pond_quality_data[pond.id] = {
                     'temperature': latest.temperature or 0,
                     'ph_value': latest.ph_value or 0,
+                    'food_value': latest.food_value or 0,
                     'dissolved_oxygen': latest.dissolved_oxygen or 0,
                     'salinity': latest.salinity or 0,
                     'ammonia_nitrogen': latest.ammonia_nitrogen or 0,
@@ -428,6 +434,7 @@ def water_quality_refresh(pond_id):
             'data': {
                 'temperature': data.temperature or 0,
                 'ph_value': data.ph_value or 0,
+                'food_value': data.food_value or 0,
                 'dissolved_oxygen': data.dissolved_oxygen or 0,
                 'salinity': data.salinity or 0,
                 'ammonia_nitrogen': data.ammonia_nitrogen or 0,

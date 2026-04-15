@@ -313,6 +313,36 @@ endblock %} {% block extra_css %}
     </div>
   </div>
 
+  <!-- 食物值 -->
+  <div class="quality-indicator">
+    <div class="quality-header">
+      <div class="quality-icon">
+        <i class="fas fa-drumstick-bite"></i>
+      </div>
+      <div class="quality-name">
+        <h5>食物值</h5>
+        <p>Food Level</p>
+      </div>
+    </div>
+    <div class="quality-gauge" id="foodValue">
+      <div class="gauge-bar">
+        <div
+          class="gauge-fill"
+          style="width: {% if pond_data.food_value %}{{ (pond_data.food_value / 100) * 100 }}%{% else %}0%{% endif %}"
+        ></div>
+      </div>
+      <div class="gauge-info">
+        <span class="gauge-value">{{ pond_data.get('food_value', '--') }}</span>
+        <span class="gauge-range">范围: 0-100</span>
+      </div>
+    </div>
+    <div class="quality-status">
+      <span class="status-dot"></span>
+      {% if pond_data.food_value and 30 <= pond_data.food_value <= 70 %}正常{%
+      else %}--{% endif %}
+    </div>
+  </div>
+
   <!-- 溶解氧 -->
   <div class="quality-indicator">
     <div class="quality-header">
@@ -450,6 +480,7 @@ endblock %} {% block extra_css %}
               <th>时间</th>
               <th>水温 (°C)</th>
               <th>PH值</th>
+              <th>食物值</th>
               <th>溶解氧 (mg/L)</th>
               <th>盐度 (‰)</th>
               <th>氨氮 (mg/L)</th>
@@ -462,6 +493,7 @@ endblock %} {% block extra_css %}
               <td>2024-03-16 10:30</td>
               <td><span style="color: var(--primary-color)">26.3</span></td>
               <td><span style="color: var(--primary-color)">7.8</span></td>
+              <td><span style="color: var(--primary-color)">46</span></td>
               <td><span style="color: #00ff88">8.2</span></td>
               <td><span style="color: var(--primary-color)">14.5</span></td>
               <td><span style="color: #ffaa00">3.6</span></td>
@@ -472,6 +504,7 @@ endblock %} {% block extra_css %}
               <td>2024-03-16 08:30</td>
               <td><span style="color: var(--primary-color)">25.8</span></td>
               <td><span style="color: var(--primary-color)">7.9</span></td>
+              <td><span style="color: var(--primary-color)">45</span></td>
               <td><span style="color: #00ff88">8.0</span></td>
               <td><span style="color: var(--primary-color)">14.3</span></td>
               <td><span style="color: #ffaa00">3.8</span></td>
@@ -482,6 +515,7 @@ endblock %} {% block extra_css %}
               <td>2024-03-16 06:30</td>
               <td><span style="color: var(--primary-color)">25.2</span></td>
               <td><span style="color: var(--primary-color)">7.7</span></td>
+              <td><span style="color: var(--primary-color)">47</span></td>
               <td><span style="color: #00ff88">8.4</span></td>
               <td><span style="color: var(--primary-color)">14.1</span></td>
               <td><span style="color: #ffaa00">3.5</span></td>
