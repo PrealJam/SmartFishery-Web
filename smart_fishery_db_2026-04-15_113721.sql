@@ -197,6 +197,7 @@ CREATE TABLE `sensor_data` (
   `pond_id` int NOT NULL COMMENT '关联的鱼池编号(ponds.id)',
   `temperature` float DEFAULT NULL COMMENT '水温（℃）',
   `ph_value` float DEFAULT NULL COMMENT '水体pH值',
+  `food_value` float DEFAULT NULL,
   `dissolved_oxygen` float DEFAULT NULL COMMENT '溶解氧浓度（mg/L）',
   `salinity` float DEFAULT NULL COMMENT '盐度（‰）',
   `ammonia_nitrogen` float DEFAULT NULL COMMENT '氨氮含量（mg/L）',
@@ -215,7 +216,7 @@ CREATE TABLE `sensor_data` (
 --
 
 /*!40000 ALTER TABLE `sensor_data` DISABLE KEYS */;
-INSERT INTO `sensor_data` VALUES (679,1,0.1,7,46,14.5,0,0,'2026-04-11 12:41:17'),(680,2,25.69,7.06,7.45,15.61,2.64,1.05,'2026-04-11 04:33:44'),(681,3,23.59,8.03,8.84,17.06,3.54,1.39,'2026-04-11 04:33:44'),(682,4,24.1,7.37,8.51,14.49,3.18,1.13,'2026-04-11 04:33:44'),(683,5,26.63,7.91,8.13,16.45,3.02,1.69,'2026-04-11 04:33:44');
+INSERT INTO `sensor_data` VALUES (679,1,0.1,7,NULL,46,14.5,0,0,'2026-04-11 12:41:17'),(680,2,25.69,7.06,NULL,7.45,15.61,2.64,1.05,'2026-04-11 04:33:44'),(681,3,23.59,8.03,NULL,8.84,17.06,3.54,1.39,'2026-04-11 04:33:44'),(682,4,24.1,7.37,NULL,8.51,14.49,3.18,1.13,'2026-04-11 04:33:44'),(683,5,26.63,7.91,NULL,8.13,16.45,3.02,1.69,'2026-04-11 04:33:44');
 /*!40000 ALTER TABLE `sensor_data` ENABLE KEYS */;
 
 --
@@ -297,4 +298,4 @@ INSERT INTO `users` VALUES (1,'admin','admin@smartfishery.com','$2b$12$WQQSsJ0B8
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2026-04-11 18:08:52
+-- Dump completed on 2026-04-15 11:37:23
