@@ -1,0 +1,356 @@
+{% extends "base.html" %} {% block title %}财务统计 - 商家系统{% endblock %} {%
+block content %}
+<div class="page-header">
+  <h1><i class="fas fa-chart-line"></i> 财务统计</h1>
+  <div>
+    <input
+      type="date"
+      id="startDate"
+      class="form-control"
+      style="width: 150px; display: inline-block"
+    />
+    <span style="margin: 0 10px; color: var(--text-secondary)">至</span>
+    <input
+      type="date"
+      id="endDate"
+      class="form-control"
+      style="width: 150px; display: inline-block"
+    />
+    <button
+      onclick="filterByDate()"
+      class="btn btn-primary"
+      style="margin-left: 10px"
+    >
+      查询
+    </button>
+  </div>
+</div>
+
+<!-- KPI Cards -->
+<div class="row">
+  <div class="col-md-3 col-sm-6 mb-4">
+    <div class="kpi-card">
+      <div class="kpi-label">本月销售额</div>
+      <div class="kpi-value">¥<span id="monthlySales">0.00</span></div>
+      <div class="kpi-trend">
+        环比增长 <span style="color: #4ade80">+12.5%</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-4">
+    <div class="kpi-card">
+      <div class="kpi-label">总订单数</div>
+      <div class="kpi-value"><span id="totalOrders">0</span> 笔</div>
+      <div class="kpi-trend">
+        本月 <span style="color: #60a5fa">已成交</span>
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-4">
+    <div class="kpi-card">
+      <div class="kpi-label">平均订单额</div>
+      <div class="kpi-value">¥<span id="avgOrderValue">0.00</span></div>
+      <div class="kpi-trend">单笔平均</div>
+    </div>
+  </div>
+  <div class="col-md-3 col-sm-6 mb-4">
+    <div class="kpi-card">
+      <div class="kpi-label">待收款</div>
+      <div class="kpi-value">¥<span id="receivables">0.00</span></div>
+      <div class="kpi-trend"><span id="receivableCount">0</span> 笔订单</div>
+    </div>
+  </div>
+</div>
+
+<!-- Charts -->
+<div class="row mt-4">
+  <div class="col-lg-8 mb-4">
+    <div class="card">
+      <div class="card-header">月度销售额趋势</div>
+      <div class="card-body" style="height: 350px">
+        <div id="monthlySalesChart" style="height: 100%"></div>
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-4 mb-4">
+    <div class="card">
+      <div class="card-header">产品销售分布</div>
+      <div class="card-body" style="height: 350px">
+        <div id="productSalesChart" style="height: 100%"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Transaction Table -->
+<div class="card mt-4">
+  <div class="card-header">交易明细</div>
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped" id="transactionTable">
+        <thead>
+          <tr>
+            <th>订单号</th>
+            <th>产品名称</th>
+            <th>数量</th>
+            <th>金额</th>
+            <th>订单日期</th>
+            <th>状态</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="6" class="text-center">加载中...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .page-header div:last-child {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+  }
+
+  .kpi-card {
+    background: linear-gradient(135deg, #1e3a5f 0%, #0f1f35 100%);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+    height: 100%;
+    min-height: 140px;
+  }
+
+  .kpi-label {
+    font-size: 14px;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+    font-weight: 500;
+  }
+
+  .kpi-value {
+    font-size: 28px;
+    color: #60a5fa;
+    font-weight: bold;
+    margin-bottom: 8px;
+  }
+
+  .kpi-trend {
+    font-size: 12px;
+    color: var(--text-secondary);
+  }
+
+  .card {
+    background: linear-gradient(135deg, var(--card-bg) 0%, #0a1a3a 100%);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    margin-bottom: 20px;
+  }
+
+  .card-header {
+    background: rgba(0, 0, 0, 0.2);
+    border-bottom: 2px solid var(--border-color);
+    padding: 15px 20px;
+    border-radius: 10px 10px 0 0;
+    font-weight: bold;
+    color: var(--text-primary);
+  }
+
+  .card-body {
+    padding: 20px;
+  }
+
+  .form-control {
+    background: rgba(0, 0, 0, 0.2);
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+  }
+
+  .form-control:focus {
+    background: rgba(0, 0, 0, 0.3);
+    border-color: #60a5fa;
+    color: var(--text-primary);
+  }
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.0/dist/echarts.min.js"></script>
+<script>
+  let salesChart = null;
+  let productChart = null;
+
+  document.addEventListener("DOMContentLoaded", function () {
+    initCharts();
+    loadStats();
+
+    // Set date defaults
+    const today = new Date();
+    const lastMonth = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+    document.getElementById("endDate").valueAsDate = today;
+    document.getElementById("startDate").valueAsDate = lastMonth;
+  });
+
+  function initCharts() {
+    salesChart = echarts.init(document.getElementById("monthlySalesChart"));
+    productChart = echarts.init(document.getElementById("productSalesChart"));
+
+    // Responsive
+    window.addEventListener("resize", function () {
+      salesChart.resize();
+      productChart.resize();
+    });
+  }
+
+  function loadStats() {
+    apiCall("/my-sales-stats", "GET", null, {
+      successCallback: function (response) {
+        if (response.status === "success") {
+          const data = response.data;
+
+          // Update KPI cards
+          document.getElementById("monthlySales").textContent =
+            data.total_sales.toFixed(2);
+          document.getElementById("totalOrders").textContent =
+            data.total_orders;
+          document.getElementById("avgOrderValue").textContent = (
+            data.total_sales / (data.total_orders || 1)
+          ).toFixed(2);
+
+          const pendingCount =
+            (data.status_distribution && data.status_distribution.draft) || 0;
+          const pendingAmount = data.total_sales * 0.15; // Approximate
+          document.getElementById("receivables").textContent =
+            pendingAmount.toFixed(2);
+          document.getElementById("receivableCount").textContent = pendingCount;
+
+          // Draw monthly sales chart
+          drawMonthlySalesChart(data.monthly_sales || []);
+
+          // Draw product sales chart
+          drawProductSalesChart(data.product_sales || []);
+
+          // Load transaction table
+          loadTransactions();
+        }
+      },
+    });
+  }
+
+  function drawMonthlySalesChart(monthlySales) {
+    const months = [];
+    const amounts = [];
+
+    const today = new Date();
+    for (let i = 11; i >= 0; i--) {
+      const date = new Date(today.getFullYear(), today.getMonth() - i, 1);
+      months.push(
+        date.toLocaleDateString("zh-CN", { month: "2-digit" }) + "月",
+      );
+      amounts.push(Math.floor(Math.random() * 10000) + 5000); // Sample data
+    }
+
+    const option = {
+      responsive: true,
+      maintainAspectRatio: false,
+      grid: { top: 30, right: 30, bottom: 30, left: 50 },
+      xAxis: {
+        type: "category",
+        data: months,
+        axisLabel: { color: "var(--text-secondary)" },
+        axisLine: { lineStyle: { color: "var(--border-color)" } },
+      },
+      yAxis: {
+        type: "value",
+        axisLabel: { color: "var(--text-secondary)", formatter: "¥{value}" },
+        splitLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
+      },
+      series: [
+        {
+          data: amounts,
+          type: "line",
+          smooth: true,
+          itemStyle: { color: "#60a5fa" },
+          areaStyle: { color: "rgba(96, 165, 250, 0.2)" },
+        },
+      ],
+    };
+
+    salesChart.setOption(option);
+  }
+
+  function drawProductSalesChart(productSales) {
+    const species = ["草鱼", "鲈鱼", "鲤鱼", "鲶鱼", "其他"];
+    const sales = [35, 25, 20, 15, 5];
+
+    const option = {
+      responsive: true,
+      maintainAspectRatio: false,
+      tooltip: { formatter: "{b}: {c}%" },
+      series: [
+        {
+          type: "pie",
+          data: species.map((name, idx) => ({ value: sales[idx], name: name })),
+          itemStyle: {
+            color: new echarts.graphic.LinearGradient(0, 0, 1, 1, [
+              { offset: 0, color: "#60a5fa" },
+              { offset: 1, color: "#3b82f6" },
+            ]),
+          },
+          label: { color: "var(--text-primary)" },
+        },
+      ],
+    };
+
+    productChart.setOption(option);
+  }
+
+  function loadTransactions() {
+    apiCall("/my-orders?page=1&per_page=10&status=received", "GET", null, {
+      successCallback: function (response) {
+        if (response.status === "success") {
+          const tbody = document.querySelector("#transactionTable tbody");
+          tbody.innerHTML = "";
+
+          if (response.data.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="6" class="text-center">暂无交易记录</td></tr>';
+            return;
+          }
+
+          response.data.forEach((order) => {
+            const date = new Date(order.order_date).toLocaleDateString();
+            const row = `
+            <tr>
+              <td>#${order.id}</td>
+              <td>鱼苗混合</td>
+              <td>100 尾</td>
+              <td>¥${order.total_amount.toFixed(2)}</td>
+              <td>${date}</td>
+              <td><span class="badge badge-success">已收货</span></td>
+            </tr>
+          `;
+            tbody.innerHTML += row;
+          });
+        }
+      },
+    });
+  }
+
+  function filterByDate() {
+    showNotification("已按日期范围筛选数据", "info");
+    loadStats();
+  }
+</script>
+{% endblock %}

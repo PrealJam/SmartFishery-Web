@@ -6,7 +6,7 @@ Smart Fishery Management System v2.0 - Flask with Real-time Data
 import os
 import sys
 from datetime import datetime, timedelta
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy import text
 import random
@@ -31,7 +31,7 @@ try:
     
     HARDWARE_SUPPORT = True
 except ImportError as e:
-    print(f"⚠️  硬件服务导入失败: {e}")
+    print(f"[WARN] 硬件服务导入失败: {e}")
     HARDWARE_SUPPORT = False
 
 # 配置日志
@@ -72,6 +72,7 @@ class Pond(db.Model):
     volume = db.Column(db.Float, default=0.0)
     status = db.Column(db.String(20), default='正常')
     location = db.Column(db.String(255))
+    default_supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id', ondelete='SET NULL'), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -84,6 +85,7 @@ class Pond(db.Model):
             'volume': self.volume,
             'status': self.status,
             'location': self.location,
+            'default_supplier_id': self.default_supplier_id,
             'created_at': self.created_at.isoformat() if self.created_at else None
         }
 
@@ -156,13 +158,195 @@ class DeviceLog(db.Model):
 
 
 # ============================================================
+# 用户认证模型（任务4）
+# ============================================================
+class User(db.Model):
+    __tablename__ = 'users'
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(100), unique=True, nullable=False)
+    password_hash = db.Column(db.String(255), nullable=False)
+    role = db.Column(db.String(20), default='user')
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id', ondelete='SET NULL'), nullable=True)
+    email = db.Column(db.String(100), unique=True, nullable=True)
+    full_name = db.Column(db.String(100))
+    is_active = db.Column(db.Boolean, default=True)
+    last_login = db.Column(db.DateTime)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'username': self.username,
+            'role': self.role,
+            'supplier_id': self.supplier_id,
+            'email': self.email,
+            'full_name': self.full_name,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+# ============================================================
+# 供应商管理模型（任务5）
+# ============================================================
+
+class Supplier(db.Model):
+    __tablename__ = 'suppliers'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), unique=True, nullable=False)
+    contact_person = db.Column(db.String(50))
+    phone = db.Column(db.String(20))
+    email = db.Column(db.String(100))
+    address = db.Column(db.String(255))
+    registration_date = db.Column(db.Date)
+    status = db.Column(db.String(20), default='active')
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 关系
+    products = db.relationship('SeedlingProduct', backref='supplier', lazy='dynamic', cascade='all, delete-orphan')
+    users = db.relationship('User', backref='supplier_obj', lazy='dynamic')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'name': self.name,
+            'contact_person': self.contact_person,
+            'phone': self.phone,
+            'email': self.email,
+            'address': self.address,
+            'registration_date': self.registration_date.isoformat() if self.registration_date else None,
+            'status': self.status,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class SeedlingProduct(db.Model):
+    __tablename__ = 'seedling_products'
+    id = db.Column(db.Integer, primary_key=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id', ondelete='CASCADE'), nullable=False)
+    product_name = db.Column(db.String(100), nullable=False)
+    species = db.Column(db.String(50), nullable=False)
+    grade = db.Column(db.String(50))
+    unit_price = db.Column(db.Float, default=0.0)
+    cost_price = db.Column(db.Float)
+    growth_cycle_days = db.Column(db.Integer)
+    survival_rate = db.Column(db.Float)
+    image_url = db.Column(db.String(255))
+    description = db.Column(db.Text)
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'supplier_id': self.supplier_id,
+            'product_name': self.product_name,
+            'species': self.species,
+            'grade': self.grade,
+            'unit_price': self.unit_price,
+            'cost_price': self.cost_price,
+            'growth_cycle_days': self.growth_cycle_days,
+            'survival_rate': self.survival_rate,
+            'image_url': self.image_url,
+            'description': self.description,
+            'is_active': self.is_active,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class SeedlingInventory(db.Model):
+    __tablename__ = 'seedling_inventory'
+    id = db.Column(db.Integer, primary_key=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id', ondelete='CASCADE'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('seedling_products.id', ondelete='CASCADE'), nullable=False)
+    quantity = db.Column(db.Integer, default=0)
+    last_updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_by = db.Column(db.String(50))
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'supplier_id': self.supplier_id,
+            'product_id': self.product_id,
+            'quantity': self.quantity,
+            'last_updated_at': self.last_updated_at.isoformat() if self.last_updated_at else None,
+            'updated_by': self.updated_by
+        }
+
+
+class PurchaseOrder(db.Model):
+    __tablename__ = 'purchase_orders'
+    id = db.Column(db.Integer, primary_key=True)
+    supplier_id = db.Column(db.Integer, db.ForeignKey('suppliers.id', ondelete='RESTRICT'), nullable=False)
+    pond_id = db.Column(db.Integer, db.ForeignKey('ponds.id', ondelete='RESTRICT'), nullable=False)
+    created_by = db.Column(db.Integer, db.ForeignKey('users.id', ondelete='RESTRICT'), nullable=False)
+    order_date = db.Column(db.DateTime, default=datetime.utcnow)
+    expected_delivery_date = db.Column(db.Date)
+    actual_delivery_date = db.Column(db.Date)
+    status = db.Column(db.String(50), default='draft')
+    total_amount = db.Column(db.Float, default=0.0)
+    notes = db.Column(db.Text)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    # 关系
+    items = db.relationship('OrderItem', backref='order', lazy='dynamic', cascade='all, delete-orphan')
+    creator = db.relationship('User', backref='created_orders')
+    pond_ref = db.relationship('Pond', backref='purchase_orders')
+    supplier_ref = db.relationship('Supplier', backref='purchase_orders')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'supplier_id': self.supplier_id,
+            'pond_id': self.pond_id,
+            'created_by': self.created_by,
+            'order_date': self.order_date.isoformat() if self.order_date else None,
+            'expected_delivery_date': self.expected_delivery_date.isoformat() if self.expected_delivery_date else None,
+            'actual_delivery_date': self.actual_delivery_date.isoformat() if self.actual_delivery_date else None,
+            'status': self.status,
+            'total_amount': self.total_amount,
+            'notes': self.notes,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+class OrderItem(db.Model):
+    __tablename__ = 'order_items'
+    id = db.Column(db.Integer, primary_key=True)
+    order_id = db.Column(db.Integer, db.ForeignKey('purchase_orders.id', ondelete='CASCADE'), nullable=False)
+    product_id = db.Column(db.Integer, db.ForeignKey('seedling_products.id', ondelete='RESTRICT'), nullable=False)
+    quantity = db.Column(db.Integer, default=0)
+    unit_price = db.Column(db.Float, default=0.0)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # 关系
+    product = db.relationship('SeedlingProduct', backref='order_items')
+    
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'order_id': self.order_id,
+            'product_id': self.product_id,
+            'quantity': self.quantity,
+            'unit_price': self.unit_price,
+            'subtotal': self.quantity * self.unit_price,
+            'created_at': self.created_at.isoformat() if self.created_at else None
+        }
+
+
+# ============================================================
 # 硬件数据采集初始化
 # ============================================================
 
 def init_hardware_collection():
     """初始化硬件数据采集"""
     if not HARDWARE_SUPPORT:
-        print("⚠️  硬件支持未启用")
+        print("[WARN] 硬件支持未启用")
         return
     
     try:
@@ -176,9 +360,9 @@ def init_hardware_collection():
         with app.app_context():
             pond = Pond.query.get(1)
             if pond:
-                logger.info(f"✅ 硬件采集已绑定到: {pond.pond_name} (ID=1)")
+                logger.info(f"[OK] 硬件采集已绑定到: {pond.pond_name} (ID=1)")
             else:
-                logger.warning("⚠️  一号池（ID=1）不存在！")
+                logger.warning("[WARN] 一号池（ID=1）不存在！")
         
         storage.set_default_pond(pond_id)
         
@@ -218,7 +402,7 @@ def init_hardware_collection():
         
         # 启动采集
         collector.start()
-        print("✅ 硬件数据采集已启动")
+        print("[OK] 硬件数据采集已启动")
         
         # 输出解析器状态
         if HARDWARE_SUPPORT:
@@ -226,7 +410,7 @@ def init_hardware_collection():
             print(f"📊 解析器就绪: {parser.__class__.__name__}")
         
     except Exception as e:
-        print(f"❌ 硬件初始化失败: {e}")
+        print(f"[ERR] 硬件初始化失败: {e}")
 
 
 # 应用启动事件
@@ -245,10 +429,124 @@ def shutdown_hardware():
 app.teardown_appcontext(lambda exc: None)  # Placeholder
 
 # ============================================================
+# 认证和权限检查（任务4）
+# ============================================================
+from functools import wraps
+
+# 设置 session 密钥
+app.secret_key = 'smartfishery-secret-key-2026'
+
+def login_required(f):
+    """权限检查装饰器"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return redirect(url_for('login_page'))
+        return f(*args, **kwargs)
+    return decorated_function
+
+def api_login_required(f):
+    """API 权限检查装饰器"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'status': 'error', 'message': '未认证，请登录'}), 401
+        return f(*args, **kwargs)
+    return decorated_function
+
+
+# ============================================================
+# 权限装饰器（任务6）
+# ============================================================
+
+def role_required(allowed_roles):
+    """角色权限检查装饰器"""
+    def decorator(f):
+        @wraps(f)
+        def decorated_function(*args, **kwargs):
+            if 'user_id' not in session:
+                return jsonify({'status': 'error', 'message': '未认证，请登录'}), 401
+            
+            user = User.query.get(session['user_id'])
+            if not user or user.role not in allowed_roles:
+                return jsonify({'status': 'error', 'message': '您没有权限访问此资源'}), 403
+            
+            return f(*args, **kwargs)
+        return decorated_function
+    return decorator
+
+
+def supplier_scope_check(f):
+    """供应商数据隔离检查装饰器 - 确保供应商只能访问自己的数据"""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        if 'user_id' not in session:
+            return jsonify({'status': 'error', 'message': '未认证，请登录'}), 401
+        
+        user = User.query.get(session['user_id'])
+        if not user:
+            return jsonify({'status': 'error', 'message': '用户不存在'}), 401
+        
+        # 管理员可以访问所有数据
+        if user.role == 'admin':
+            return f(*args, **kwargs)
+        
+        # 供应商只能访问自己的数据
+        if user.role == 'supplier' and user.supplier_id:
+            # 将supplier_id注入到kwargs中供路由函数使用
+            kwargs['_supplier_id'] = user.supplier_id
+            return f(*args, **kwargs)
+        
+        return jsonify({'status': 'error', 'message': '没有权限访问此数据'}), 403
+    return decorated_function
+
+
+# 登录页面
+@app.route('/login', methods=['GET', 'POST'])
+def login_page():
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        identity = request.form.get('identity', 'admin')  # 获取选择的身份
+        
+        user = User.query.filter_by(username=username).first()
+        # 简单密码验证（生产环境应使用哈希）
+        if user and user.password_hash == password:
+            # 验证选择的身份是否与用户角色匹配
+            if identity == 'admin' and user.role != 'admin':
+                return render_template('login.html', error='该账号不是管理员账号，请选择"鱼苗供应商"身份')
+            elif identity == 'supplier' and user.role != 'supplier':
+                return render_template('login.html', error='该账号不是供应商账号，请选择"渔场管理员"身份')
+            
+            session['user_id'] = user.id
+            session['username'] = user.username
+            session['role'] = user.role
+            session['supplier_id'] = user.supplier_id
+            
+            # 根据角色重定向到不同的仪表板
+            if user.role == 'admin':
+                return redirect(url_for('index'))
+            elif user.role == 'supplier':
+                return redirect(url_for('supplier_dashboard'))
+            else:
+                return redirect(url_for('index'))
+        else:
+            return render_template('login.html', error='用户名或密码错误')
+    
+    return render_template('login.html')
+
+# 登出
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login_page'))
+
+# ============================================================
 # 页面路由
 # ============================================================
 
 @app.route('/')
+@login_required
 def index():
     try:
         pond_count = Pond.query.count()
@@ -318,6 +616,7 @@ def index():
 
 
 @app.route('/ponds')
+@login_required
 def ponds_page():
     try:
         ponds = Pond.query.all()
@@ -328,6 +627,7 @@ def ponds_page():
 
 
 @app.route('/water-quality')
+@login_required
 def water_quality_page():
     try:
         ponds = Pond.query.all()
@@ -357,6 +657,7 @@ def water_quality_page():
 
 
 @app.route('/devices')
+@login_required
 def devices_page():
     try:
         devices = Device.query.all()
@@ -565,20 +866,65 @@ def get_pond(pond_id):
 
 @app.route('/api/sensor-data/<int:pond_id>', methods=['GET'])
 def get_sensor_data(pond_id):
+    """
+    获取指定鱼池的传感器数据（支持分页和时间范围过滤）
+    查询参数：page（页码），per_page（每页数量），hours（过去N小时内的数据）
+    """
     try:
-        data = SensorData.query.filter_by(pond_id=pond_id).order_by(SensorData.recorded_at.desc()).first()
-        if not data:
-            return jsonify({'status': 'success', 'data': None}), 200
-        return jsonify({'status': 'success', 'data': data.to_dict()}), 200
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 50, type=int)
+        hours = request.args.get('hours', None, type=int)
+        
+        query = SensorData.query.filter_by(pond_id=pond_id)
+        
+        # 支持时间范围过滤
+        if hours:
+            from datetime import timedelta
+            cutoff_time = datetime.utcnow() - timedelta(hours=hours)
+            query = query.filter(SensorData.recorded_at >= cutoff_time)
+        
+        # 使用分页并按时间倒序排列
+        pagination = query.order_by(SensorData.recorded_at.desc()).paginate(
+            page=page,
+            per_page=per_page,
+            error_out=False
+        )
+        
+        return jsonify({
+            'status': 'success',
+            'data': [d.to_dict() for d in pagination.items],
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page
+        }), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
 
 @app.route('/api/devices/<int:pond_id>', methods=['GET'])
 def get_devices(pond_id):
+    """
+    获取指定鱼池的设备列表（支持分页）
+    查询参数：page（页码，默认1），per_page（每页数量，默认20）
+    """
     try:
-        devices = Device.query.filter_by(pond_id=pond_id).all()
-        return jsonify({'status': 'success', 'data': [d.to_dict() for d in devices]}), 200
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        
+        # 使用分页查询，优化大数据集性能
+        pagination = Device.query.filter_by(pond_id=pond_id).paginate(
+            page=page, 
+            per_page=per_page, 
+            error_out=False
+        )
+        
+        return jsonify({
+            'status': 'success', 
+            'data': [d.to_dict() for d in pagination.items],
+            'total': pagination.total,
+            'pages': pagination.pages,
+            'current_page': page
+        }), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
 
@@ -603,22 +949,61 @@ def control_device(device_id):
 
 @app.route('/api/dashboard-stats', methods=['GET'])
 def get_dashboard_stats():
+    """
+    获取仪表板统计数据（优化：使用数据库级聚合）
+    """
     try:
+        # 一次查询获取多个统计值，避免多次查询
+        from sqlalchemy import func
+        
+        stats_query = db.session.query(
+            func.count(Pond.id).label('pond_count'),
+            func.count(Device.id).label('total_devices'),
+            func.sum(Pond.fish_count).label('total_fish_count'),
+            func.sum(db.case(
+                (Device.status == '在线', 1),
+                else_=0
+            )).label('online_devices'),
+            func.sum(db.case(
+                (Device.status == '运行中', 1),
+                else_=0
+            )).label('running_devices')
+        ).outerjoin(Device).first()
+        
         stats = {
-            'pond_count': Pond.query.count(),
-            'total_fish_count': db.session.query(db.func.sum(Pond.fish_count)).scalar() or 0,
-            'total_devices': Device.query.count(),
-            'online_devices': Device.query.filter_by(status='在线').count(),
-            'running_devices': Device.query.filter_by(status='运行中').count()
+            'pond_count': stats_query.pond_count or 0,
+            'total_devices': stats_query.total_devices or 0,
+            'total_fish_count': int(stats_query.total_fish_count or 0),
+            'online_devices': stats_query.online_devices or 0,
+            'running_devices': stats_query.running_devices or 0
         }
+        
         return jsonify({'status': 'success', 'data': stats}), 200
     except Exception as e:
-        return jsonify({'status': 'error', 'message': str(e)}), 500
+        # 如果聚合查询失败，降级到多个查询
+        try:
+            stats = {
+                'pond_count': Pond.query.count(),
+                'total_fish_count': db.session.query(db.func.sum(Pond.fish_count)).scalar() or 0,
+                'total_devices': Device.query.count(),
+                'online_devices': Device.query.filter_by(status='在线').count(),
+                'running_devices': Device.query.filter_by(status='运行中').count()
+            }
+            return jsonify({'status': 'success', 'data': stats}), 200
+        except Exception as e2:
+            return jsonify({'status': 'error', 'message': str(e2)}), 500
 
 
 @app.route('/api/statistics', methods=['GET'])
 def get_statistics():
+    """获取系统统计数据（优化：复用仪表板统计接口）"""
     try:
+        # 复用仪表板统计，避免重复查询
+        stats_response = get_dashboard_stats()
+        if stats_response[1] == 200:
+            return stats_response
+        
+        # 如果失败，降级方案
         stats = {
             'pond_count': Pond.query.count(),
             'total_fish_count': int(db.session.query(db.func.sum(Pond.fish_count)).scalar() or 0),
@@ -690,9 +1075,14 @@ def hardware_stop():
 
 @app.route('/api/sensor-data/latest/<int:pond_id>', methods=['GET'])
 def get_latest_sensor_data(pond_id):
-    """获取指定鱼池的最新传感器数据"""
+    """获取指定鱼池的最新传感器数据（使用索引优化查询）"""
     try:
-        data = SensorData.query.filter_by(pond_id=pond_id).order_by(SensorData.recorded_at.desc()).first()
+        # 使用组合索引 idx_pond_recorded (pond_id, recorded_at) 优化查询
+        # order_by + first() 比 first() 后再 order_by 更高效
+        data = SensorData.query.filter_by(pond_id=pond_id)\
+            .order_by(SensorData.recorded_at.desc())\
+            .first()
+        
         if not data:
             return jsonify({'status': 'success', 'data': None}), 200
         
@@ -702,6 +1092,103 @@ def get_latest_sensor_data(pond_id):
         }), 200
     except Exception as e:
         return jsonify({'status': 'error', 'message': str(e)}), 500
+
+
+# ============================================================
+# 前端页面路由（任务7-9）
+# ============================================================
+
+@app.route('/supplier-dashboard', methods=['GET'])
+@login_required
+def supplier_dashboard():
+    """供应商仪表板"""
+    try:
+        if session.get('role') != 'supplier':
+            return redirect(url_for('login_page'))
+        
+        supplier_id = session.get('supplier_id')
+        supplier = Supplier.query.get(supplier_id)
+        
+        return render_template('supplier-dashboard.html', 
+                               username=session.get('username'),
+                               role=session.get('role'),
+                               supplier_name=supplier.name if supplier else '供应商')
+    except Exception as e:
+        return render_template('error.html', message=str(e)), 500
+
+
+@app.route('/supplier-products', methods=['GET'])
+@login_required
+def supplier_products():
+    """供应商产品管理"""
+    try:
+        if session.get('role') != 'supplier':
+            return redirect(url_for('login_page'))
+        
+        return render_template('supplier-products.html', 
+                               username=session.get('username'),
+                               role=session.get('role'))
+    except Exception as e:
+        return render_template('error.html', message=str(e)), 500
+
+
+@app.route('/supplier-orders', methods=['GET'])
+@login_required
+def supplier_orders():
+    """供应商订单管理"""
+    try:
+        if session.get('role') != 'supplier':
+            return redirect(url_for('login_page'))
+        
+        return render_template('supplier-orders.html', 
+                               username=session.get('username'),
+                               role=session.get('role'))
+    except Exception as e:
+        return render_template('error.html', message=str(e)), 500
+
+
+@app.route('/supplier-stats', methods=['GET'])
+@login_required
+def supplier_stats():
+    """供应商财务统计"""
+    try:
+        if session.get('role') != 'supplier':
+            return redirect(url_for('login_page'))
+        
+        return render_template('supplier-stats.html', 
+                               username=session.get('username'),
+                               role=session.get('role'))
+    except Exception as e:
+        return render_template('error.html', message=str(e)), 500
+
+
+@app.route('/seedling-management', methods=['GET'])
+@login_required
+def seedling_management():
+    """管理员鱼苗管理中心"""
+    try:
+        if session.get('role') != 'admin':
+            return redirect(url_for('login_page'))
+        
+        return render_template('seedling-management.html', 
+                               username=session.get('username'),
+                               role=session.get('role'))
+    except Exception as e:
+        return render_template('error.html', message=str(e)), 500
+
+
+# ============================================================
+# 供应商管理 API 注册（任务6）
+# ============================================================
+
+try:
+    from supplier_api import register_supplier_apis
+    register_supplier_apis(app, db, Supplier, SeedlingProduct, SeedlingInventory, PurchaseOrder, OrderItem, User, Pond)
+    print("[OK] 供应商管理API已注册")
+except ImportError as e:
+    print(f"[WARN] 供应商API导入失败: {e}")
+except Exception as e:
+    print(f"[WARN] 供应商API注册失败: {e}")
 
 
 # ============================================================
@@ -725,11 +1212,11 @@ if __name__ == '__main__':
         try:
             init_hardware_collection()
         except Exception as e:
-            print(f"⚠️  硬件采集启动失败: {e}")
+            print(f"[WARN] 硬件采集启动失败: {e}")
     
     try:
         app.run(host='127.0.0.1', port=5000, debug=True, use_reloader=False)
     except KeyboardInterrupt:
         print("\n应用正在关闭...")
         shutdown_hardware()
-        print("✅ 已正确关闭")
+        print("[OK] 已正确关闭")

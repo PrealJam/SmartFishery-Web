@@ -652,6 +652,223 @@
         border-color: var(--primary-color);
         color: var(--primary-color);
       }
+
+      /* ============================================================ */
+      /* 任务3：增强交互体验 - 加载指示器、Toast 和按钮状态 */
+      /* ============================================================ */
+
+      /* 全局加载指示器 */
+      .global-loading-indicator {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 9999;
+        backdrop-filter: blur(4px);
+      }
+
+      .loading-spinner {
+        text-align: center;
+        color: var(--primary-color);
+      }
+
+      .spinner-border {
+        width: 50px !important;
+        height: 50px !important;
+        border-width: 4px !important;
+      }
+
+      /* Toast 容器 */
+      .toast-container {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 10000;
+        max-width: 400px;
+      }
+
+      /* Toast 通知样式 */
+      .toast-notification {
+        background: var(--card-bg);
+        border: 2px solid var(--border-color);
+        border-radius: 8px;
+        padding: 16px;
+        margin-bottom: 10px;
+        display: flex;
+        align-items: center;
+        animation: slideIn 0.3s ease-out;
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        opacity: 0;
+        transform: translateX(400px);
+      }
+
+      .toast-notification.show {
+        opacity: 1;
+        transform: translateX(0);
+      }
+
+      .toast-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        flex: 1;
+      }
+
+      .toast-icon {
+        font-size: 1.2rem;
+        min-width: 24px;
+      }
+
+      .toast-message {
+        font-size: 0.9rem;
+      }
+
+      .toast-progress {
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        height: 3px;
+        background: currentColor;
+        animation: shrink linear forwards;
+      }
+
+      .toast-success {
+        border-color: #00ff88;
+        color: #00ff88;
+      }
+
+      .toast-error {
+        border-color: #ff4444;
+        color: #ff4444;
+      }
+
+      .toast-warning {
+        border-color: #ffaa00;
+        color: #ffcc00;
+      }
+
+      .toast-info {
+        border-color: var(--primary-color);
+        color: var(--primary-color);
+      }
+
+      /* 按钮状态样式 */
+      .btn.is-loading {
+        pointer-events: none;
+        opacity: 0.7;
+      }
+
+      .btn.is-loading .spinner-border {
+        width: 16px !important;
+        height: 16px !important;
+        border-width: 2px !important;
+      }
+
+      .btn.is-success {
+        background-color: #00ff88 !important;
+        border-color: #00ff88 !important;
+        color: #0a0e27 !important;
+        animation: pulse-success 0.6s ease-out;
+      }
+
+      .btn.is-error {
+        background-color: #ff4444 !important;
+        border-color: #ff4444 !important;
+        color: white !important;
+        animation: shake 0.4s ease-out;
+      }
+
+      /* 骨架屏加载动画 */
+      .skeleton {
+        background: linear-gradient(
+          90deg,
+          var(--border-color) 25%,
+          var(--card-bg) 50%,
+          var(--border-color) 75%
+        );
+        background-size: 200% 100%;
+        animation: skeleton-loading 1.5s infinite;
+      }
+
+      @keyframes skeleton-loading {
+        0% {
+          background-position: 200% 0;
+        }
+        100% {
+          background-position: -200% 0;
+        }
+      }
+
+      .skeleton-text {
+        height: 12px;
+        border-radius: 4px;
+        margin-bottom: 8px;
+      }
+
+      .skeleton-title {
+        height: 20px;
+        border-radius: 4px;
+        margin-bottom: 12px;
+        width: 60%;
+      }
+
+      /* 动画 */
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateX(400px);
+        }
+        to {
+          opacity: 1;
+          transform: translateX(0);
+        }
+      }
+
+      @keyframes shrink {
+        from {
+          width: 100%;
+        }
+        to {
+          width: 0;
+        }
+      }
+
+      @keyframes pulse-success {
+        0% {
+          box-shadow: 0 0 0 0 rgba(0, 255, 136, 0.7);
+        }
+        70% {
+          box-shadow: 0 0 0 10px rgba(0, 255, 136, 0);
+        }
+        100% {
+          box-shadow: 0 0 0 0 rgba(0, 255, 136, 0);
+        }
+      }
+
+      @keyframes shake {
+        0%,
+        100% {
+          transform: translateX(0);
+        }
+        10%,
+        30%,
+        50%,
+        70%,
+        90% {
+          transform: translateX(-5px);
+        }
+        20%,
+        40%,
+        60%,
+        80% {
+          transform: translateX(5px);
+        }
+      }
     </style>
     {% block extra_css %}{% endblock %}
   </head>
@@ -673,16 +890,38 @@
         </button>
         <div class="collapse navbar-collapse" id="navbarNav">
           <ul class="navbar-nav ml-auto">
-            <li class="nav-item">
-              <a class="nav-link" href="/"
-                ><i class="fas fa-user-circle"></i> 用户</a
+            <li class="nav-item dropdown">
+              <a
+                class="nav-link dropdown-toggle"
+                href="#"
+                id="userDropdown"
+                role="button"
+                data-toggle="dropdown"
               >
+                {% if session.role == 'admin' %}
+                <i class="fas fa-crown mr-2" style="color: #ffd700"></i
+                ><span>👤 管理员</span>
+                {% elif session.role == 'supplier' %}
+                <i class="fas fa-fish mr-2" style="color: #00d4ff"></i
+                ><span>🐟 供应商</span>
+                {% else %}
+                <i class="fas fa-user-circle"></i> 用户 {% endif %}
+              </a>
+              <div
+                class="dropdown-menu dropdown-menu-right"
+                aria-labelledby="userDropdown"
+              >
+                <a class="dropdown-item" href="/">
+                  <i class="fas fa-home mr-2"></i>首页
+                </a>
+                <div class="dropdown-divider"></div>
+                <a class="dropdown-item" href="/logout">
+                  <i class="fas fa-sign-out-alt mr-2"></i>登出
+                </a>
+              </div>
             </li>
             <li class="nav-item">
               <a class="nav-link" href="#"><i class="fas fa-bell"></i> 告警</a>
-            </li>
-            <li class="nav-item">
-              <a class="nav-link" href="#"><i class="fas fa-cog"></i> 设置</a>
             </li>
           </ul>
         </div>
@@ -694,11 +933,13 @@
       <!-- 侧边栏 -->
       <div class="sidebar">
         <div class="nav flex-column">
+          <!-- 仪表板 - 所有用户可见 -->
+          {% if session.role == 'admin' %}
           <a
             class="nav-link {% if request.endpoint == 'index' %}active{% endif %}"
             href="/"
           >
-            <i class="fas fa-chart-line"></i> 仪表板
+            <i class="fas fa-chart-line"></i> 管理员仪表板
           </a>
           <a
             class="nav-link {% if request.endpoint == 'ponds_page' %}active{% endif %}"
@@ -719,6 +960,50 @@
             <i class="fas fa-cogs"></i> 设备管理
           </a>
           <hr style="border-color: var(--border-color); margin: 10px 0" />
+          <!-- 管理员特有菜单 -->
+          <a
+            class="nav-link {% if request.endpoint == 'seedling_management_page' %}active{% endif %}"
+            href="/seedling-management"
+          >
+            <i class="fas fa-cube"></i> 鱼苗管理
+          </a>
+          <hr style="border-color: var(--border-color); margin: 10px 0" />
+
+          {% elif session.role == 'supplier' %}
+          <a
+            class="nav-link {% if request.endpoint == 'supplier_dashboard' %}active{% endif %}"
+            href="/supplier-dashboard"
+          >
+            <i class="fas fa-chart-pie"></i> 商家仪表板
+          </a>
+          <a
+            class="nav-link {% if request.endpoint == 'supplier_products' %}active{% endif %}"
+            href="/supplier-products"
+          >
+            <i class="fas fa-box"></i> 产品管理
+          </a>
+          <a
+            class="nav-link {% if request.endpoint == 'supplier_orders' %}active{% endif %}"
+            href="/supplier-orders"
+          >
+            <i class="fas fa-shopping-cart"></i> 订单管理
+          </a>
+          <a
+            class="nav-link {% if request.endpoint == 'supplier_stats' %}active{% endif %}"
+            href="/supplier-stats"
+          >
+            <i class="fas fa-chart-bar"></i> 财务统计
+          </a>
+          <hr style="border-color: var(--border-color); margin: 10px 0" />
+          {% else %}
+          <a
+            class="nav-link {% if request.endpoint == 'index' %}active{% endif %}"
+            href="/"
+          >
+            <i class="fas fa-chart-line"></i> 仪表板
+          </a>
+          {% endif %}
+
           <a class="nav-link" href="#">
             <i class="fas fa-help-circle"></i> 帮助
           </a>

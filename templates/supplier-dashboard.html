@@ -1,0 +1,332 @@
+{% extends "base.html" %} {% block title %}商家仪表板 - 智慧渔场管理系统{%
+endblock %} {% block content %}
+<div class="page-header">
+  <div class="header-content">
+    <h1><i class="fas fa-chart-pie"></i> 商家仪表板</h1>
+    <p>欢迎，{{ session.get('username', '用户') }}！</p>
+  </div>
+</div>
+
+<div class="dashboard-grid">
+  <!-- KPI 卡片 -->
+  <div class="row">
+    <div class="col-md-3 mb-3">
+      <div class="kpi-card">
+        <div
+          class="kpi-icon"
+          style="background: linear-gradient(135deg, #00d4ff, #0066cc)"
+        >
+          <i class="fas fa-dollar-sign"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">本月销售额</div>
+          <div class="kpi-value" id="monthSales">¥0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+      <div class="kpi-card">
+        <div
+          class="kpi-icon"
+          style="background: linear-gradient(135deg, #ff6b6b, #ff8787)"
+        >
+          <i class="fas fa-shopping-cart"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">待确认订单</div>
+          <div class="kpi-value" id="pendingOrders">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+      <div class="kpi-card">
+        <div
+          class="kpi-icon"
+          style="background: linear-gradient(135deg, #ffd700, #ffed4e)"
+        >
+          <i class="fas fa-box"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">产品总数</div>
+          <div class="kpi-value" id="productCount">0</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-3 mb-3">
+      <div class="kpi-card">
+        <div
+          class="kpi-icon"
+          style="background: linear-gradient(135deg, #52c41a, #95de64)"
+        >
+          <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="kpi-content">
+          <div class="kpi-label">已发货订单</div>
+          <div class="kpi-value" id="shippedOrders">0</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 最近订单 -->
+  <div class="row mt-4">
+    <div class="col-12">
+      <div class="card dashboard-card">
+        <div class="card-header">
+          <h5><i class="fas fa-clock"></i> 最近订单</h5>
+        </div>
+        <div class="card-body">
+          <div class="table-responsive">
+            <table class="table table-striped" id="recentOrdersTable">
+              <thead>
+                <tr>
+                  <th>订单号</th>
+                  <th>采购鱼塘</th>
+                  <th>产品数</th>
+                  <th>订单金额</th>
+                  <th>状态</th>
+                  <th>操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td colspan="6" class="text-center text-muted">加载中...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 快速操作 -->
+  <div class="row mt-4">
+    <div class="col-md-6">
+      <div class="card dashboard-card">
+        <div class="card-header">
+          <h5><i class="fas fa-link"></i> 快速操作</h5>
+        </div>
+        <div class="card-body">
+          <a
+            href="/supplier-products"
+            class="btn btn-sm btn-primary mb-2 w-100"
+          >
+            <i class="fas fa-box"></i> 查看产品库
+          </a>
+          <a href="/supplier-orders" class="btn btn-sm btn-info mb-2 w-100">
+            <i class="fas fa-shopping-cart"></i> 管理订单
+          </a>
+          <a href="/supplier-stats" class="btn btn-sm btn-success w-100">
+            <i class="fas fa-chart-bar"></i> 财务统计
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="card dashboard-card">
+        <div class="card-header">
+          <h5><i class="fas fa-info-circle"></i> 系统提示</h5>
+        </div>
+        <div class="card-body small">
+          <p>✅ 您的账号状态正常</p>
+          <p>📦 点击"查看产品库"管理您的鱼苗产品</p>
+          <p>📋 点击"管理订单"处理采购订单</p>
+          <p>💹 点击"财务统计"查看销售数据</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  .page-header {
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .page-header h1 {
+    font-size: 2rem;
+    margin-bottom: 5px;
+  }
+
+  .kpi-card {
+    display: flex;
+    background: linear-gradient(135deg, var(--card-bg) 0%, #0a1a3a 100%);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+    padding: 20px;
+    gap: 20px;
+    transition: all 0.3s ease;
+  }
+
+  .kpi-card:hover {
+    border-color: var(--primary-color);
+    box-shadow: 0 8px 16px rgba(0, 212, 255, 0.2);
+  }
+
+  .kpi-icon {
+    width: 60px;
+    height: 60px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .kpi-content {
+    flex: 1;
+  }
+
+  .kpi-label {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+    margin-bottom: 8px;
+  }
+
+  .kpi-value {
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+  }
+
+  .dashboard-card {
+    background: linear-gradient(135deg, var(--card-bg) 0%, #0a1a3a 100%);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+  }
+
+  .dashboard-card .card-header {
+    background: rgba(0, 212, 255, 0.05);
+    border-bottom: 1px solid var(--border-color);
+    padding: 15px;
+  }
+
+  .dashboard-card .card-header h5 {
+    margin: 0;
+    color: var(--primary-color);
+  }
+
+  .dashboard-card .card-body {
+    padding: 20px;
+  }
+
+  .table {
+    color: var(--text-primary);
+  }
+
+  .table thead th {
+    border-color: var(--border-color);
+    color: var(--primary-color);
+  }
+
+  .table tbody td {
+    border-color: var(--border-color);
+  }
+
+  .table tbody tr:hover {
+    background: rgba(0, 212, 255, 0.05);
+  }
+
+  .btn-primary {
+    background: linear-gradient(90deg, #0066cc, #0099ff);
+    border: none;
+  }
+
+  .btn-info {
+    background: linear-gradient(90deg, #00a8e8, #00d4ff);
+    border: none;
+  }
+
+  .btn-success {
+    background: linear-gradient(90deg, #52c41a, #95de64);
+    border: none;
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    // 加载统计数据
+    loadSupplierStats();
+    loadRecentOrders();
+
+    // 每30秒刷新一次数据
+    setInterval(function () {
+      loadSupplierStats();
+      loadRecentOrders();
+    }, 30000);
+  });
+
+  function loadSupplierStats() {
+    apiCall("/my-sales-stats", "GET", null, {
+      successCallback: function (response) {
+        if (response.status === "success") {
+          const data = response.data;
+          document.getElementById("monthSales").textContent =
+            "¥" + data.total_sales.toFixed(2);
+          document.getElementById("productCount").textContent = Object.keys(
+            data.product_sales,
+          ).length;
+          document.getElementById("pendingOrders").textContent =
+            (data.status_distribution["draft"] || 0) +
+            (data.status_distribution["confirmed"] || 0);
+          document.getElementById("shippedOrders").textContent =
+            data.status_distribution["shipped"] || 0;
+        }
+      },
+    });
+  }
+
+  function loadRecentOrders() {
+    apiCall("/my-orders?page=1&per_page=5", "GET", null, {
+      successCallback: function (response) {
+        if (response.status === "success") {
+          const tbody = document.querySelector("#recentOrdersTable tbody");
+          tbody.innerHTML = "";
+
+          if (response.data.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="6" class="text-center text-muted">暂无订单</td></tr>';
+            return;
+          }
+
+          response.data.forEach((order) => {
+            const row = `
+            <tr>
+              <td>#${order.id}</td>
+              <td>鱼池 ${order.pond_id}</td>
+              <td>-</td>
+              <td>¥${order.total_amount.toFixed(2)}</td>
+              <td><span class="badge badge-${getStatusBadgeClass(order.status)}">${order.status}</span></td>
+              <td>
+                <a href="/supplier-orders" class="btn btn-sm btn-outline-primary">查看</a>
+              </td>
+            </tr>
+          `;
+            tbody.innerHTML += row;
+          });
+        }
+      },
+    });
+  }
+
+  function getStatusBadgeClass(status) {
+    const map = {
+      draft: "secondary",
+      confirmed: "primary",
+      shipped: "info",
+      received: "success",
+      invoiced: "success",
+    };
+    return map[status] || "secondary";
+  }
+</script>
+{% endblock %}

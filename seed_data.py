@@ -6,7 +6,7 @@
 import sys
 from datetime import datetime, timedelta
 import random
-from app import app, db, Pond, SensorData, Device, DeviceLog
+from app import app, db, Pond, SensorData, Device, DeviceLog, User, Supplier, SeedlingProduct, SeedlingInventory, PurchaseOrder, OrderItem
 
 def clear_all_data():
     """清空所有数据"""
@@ -16,11 +16,40 @@ def clear_all_data():
         SensorData.query.delete()
         Device.query.delete()
         Pond.query.delete()
+        User.query.delete()
         db.session.commit()
         print("✓ 数据清空成功")
     except Exception as e:
         print(f"✗ 清空数据失败: {e}")
         db.session.rollback()
+
+def add_users():
+    """添加用户（任务4）"""
+    print("\n正在添加默认用户...")
+    users = [
+        {
+            'username': 'admin',
+            'password_hash': 'admin123',
+            'role': 'admin'
+        },
+        {
+            'username': 'operator',
+            'password_hash': 'operator123',
+            'role': 'operator'
+        }
+    ]
+    
+    try:
+        for user_data in users:
+            user = User(**user_data)
+            db.session.add(user)
+        db.session.commit()
+        print(f"✓ 成功添加 {len(users)} 个用户")
+        return User.query.all()
+    except Exception as e:
+        print(f"✗ 添加用户失败: {e}")
+        db.session.rollback()
+        return []
 
 def add_ponds():
     """添加鱼池数据"""
@@ -94,15 +123,46 @@ def add_devices(ponds):
     try:
         device_id = 1
         for pond in ponds:
-            # 每个鱼池添加3-4个设备
-            for i, dtype in enumerate(device_types[:3]):
+            # 每个鱼池添加多个设备，包括多个相同类型的设备
+            # 增氧机：2-3台
+            for i in range(random.randint(2, 3)):
                 device = Device(
                     pond_id=pond.id,
-                    device_name=f"{pond.pond_name}-{dtype['name']}{i+1}",
-                    device_type=dtype['name'],
+                    device_name=f"{pond.pond_name}-增氧机{i+1}",
+                    device_type='增氧机',
                     device_model='标准型',
+                    status='在线' if random.random() > 0.15 else '离线',
+                    power_consumption=750,
+                    last_active=datetime.utcnow()
+                )
+                db.session.add(device)
+                devices.append(device)
+                device_id += 1
+            
+            # 投喂机：1-2台
+            for i in range(random.randint(1, 2)):
+                device = Device(
+                    pond_id=pond.id,
+                    device_name=f"{pond.pond_name}-投喂机{i+1}",
+                    device_type='投喂机',
+                    device_model='自动型',
+                    status='在线' if random.random() > 0.1 else '离线',
+                    power_consumption=500,
+                    last_active=datetime.utcnow()
+                )
+                db.session.add(device)
+                devices.append(device)
+                device_id += 1
+            
+            # 水泵：1-2台
+            for i in range(random.randint(1, 2)):
+                device = Device(
+                    pond_id=pond.id,
+                    device_name=f"{pond.pond_name}-水泵{i+1}",
+                    device_type='水泵',
+                    device_model='节能型',
                     status='在线' if random.random() > 0.2 else '离线',
-                    power_consumption=dtype['power'],
+                    power_consumption=1100,
                     last_active=datetime.utcnow()
                 )
                 db.session.add(device)
@@ -196,11 +256,27 @@ def main():
             # 清空旧数据
             clear_all_data()
             
-            # 添加数据
+            # 添加原有数据
+            add_users()
             ponds = add_ponds()
             devices = add_devices(ponds)
             add_sensor_data(ponds)
             add_device_logs(devices, ponds)
+            
+            # 添加供应商管理数据（任务11）
+            try:
+                from supplier_seed import register_supplier_seed_functions
+                seed_funcs = register_supplier_seed_functions(db, Supplier, SeedlingProduct, SeedlingInventory, PurchaseOrder, OrderItem, User, Pond)
+                
+                suppliers = seed_funcs['add_suppliers']()
+                products = seed_funcs['add_seedling_products'](suppliers)
+                seed_funcs['add_seedling_inventory'](suppliers, products)
+                seed_funcs['add_supplier_users']()
+                seed_funcs['add_sample_purchase_orders'](suppliers, products)
+            except Exception as e:
+                print(f"⚠️  供应商数据初始化出现问题: {e}")
+                import traceback
+                traceback.print_exc()
             
             print("\n" + "=" * 50)
             print("✓ 数据初始化完成！")
@@ -209,7 +285,10 @@ def main():
             print(f"  - 鱼池数量: {len(ponds)} 个")
             print(f"  - 设备数量: {len(devices)} 个")
             print(f"  - 可在以下地址访问系统:")
-            print(f"    http://127.0.0.1:5000")
+            print(f"    http://127.0.0.1:5000/login （登录页面）")
+            print(f"    管理员：username=admin, password=admin123")
+            print(f"    商家1：username=supplier1, password=supplier123")
+            print(f"    商家2：username=supplier2, password=supplier123")
             print("\n")
             
         except Exception as e:

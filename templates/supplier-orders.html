@@ -1,0 +1,154 @@
+{% extends "base.html" %} {% block title %}订单管理 - 商家系统{% endblock %} {%
+block content %}
+<div class="page-header">
+  <h1><i class="fas fa-shopping-cart"></i> 订单管理</h1>
+  <select
+    id="statusFilter"
+    class="form-control"
+    style="width: 150px; display: inline-block"
+  >
+    <option value="">所有状态</option>
+    <option value="draft">草稿</option>
+    <option value="confirmed">已确认</option>
+    <option value="shipped">已发货</option>
+    <option value="received">已收货</option>
+  </select>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="table-responsive">
+      <table class="table table-striped" id="ordersTable">
+        <thead>
+          <tr>
+            <th>订单号</th>
+            <th>采购方</th>
+            <th>订单金额</th>
+            <th>状态</th>
+            <th>下单日期</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="6" class="text-center">加载中...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<style>
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 2px solid var(--border-color);
+  }
+
+  .card {
+    background: linear-gradient(135deg, var(--card-bg) 0%, #0a1a3a 100%);
+    border: 2px solid var(--border-color);
+    border-radius: 12px;
+  }
+
+  .form-control {
+    background: rgba(0, 0, 0, 0.2);
+    border: 2px solid var(--border-color);
+    color: var(--text-primary);
+  }
+</style>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    loadOrders();
+    document
+      .getElementById("statusFilter")
+      .addEventListener("change", loadOrders);
+  });
+
+  function loadOrders() {
+    const status = document.getElementById("statusFilter").value;
+    const url = `/my-orders?page=1&per_page=20${status ? "&status=" + status : ""}`;
+
+    apiCall(url, "GET", null, {
+      successCallback: function (response) {
+        if (response.status === "success") {
+          const tbody = document.querySelector("#ordersTable tbody");
+          tbody.innerHTML = "";
+
+          if (response.data.length === 0) {
+            tbody.innerHTML =
+              '<tr><td colspan="6" class="text-center">暂无订单</td></tr>';
+            return;
+          }
+
+          response.data.forEach((order) => {
+            const date = new Date(order.order_date).toLocaleDateString();
+            const row = `
+            <tr>
+              <td>#${order.id}</td>
+              <td>鱼池 ${order.pond_id}</td>
+              <td>¥${order.total_amount.toFixed(2)}</td>
+              <td><span class="badge badge-${getStatusBadgeClass(order.status)}">${order.status}</span></td>
+              <td>${date}</td>
+              <td>
+                <button class="btn btn-sm btn-primary" onclick="viewOrder(${order.id})">查看</button>
+                ${canTransition(order.status) ? `<button class="btn btn-sm btn-success" onclick="updateOrderStatus(${order.id}, '${getNextStatus(order.status)}')">下一步</button>` : ""}
+              </td>
+            </tr>
+          `;
+            tbody.innerHTML += row;
+          });
+        }
+      },
+    });
+  }
+
+  function getStatusBadgeClass(status) {
+    const map = {
+      draft: "secondary",
+      confirmed: "primary",
+      shipped: "info",
+      received: "success",
+    };
+    return map[status] || "secondary";
+  }
+
+  function canTransition(status) {
+    return ["draft", "confirmed", "shipped"].includes(status);
+  }
+
+  function getNextStatus(status) {
+    const map = {
+      draft: "confirmed",
+      confirmed: "shipped",
+      shipped: "received",
+    };
+    return map[status] || status;
+  }
+
+  function viewOrder(orderId) {
+    alert("订单详情页面正在开发中 (#" + orderId + ")");
+  }
+
+  function updateOrderStatus(orderId, newStatus) {
+    if (confirm(`确认要将订单状态更新为 ${newStatus} 吗?`)) {
+      apiCall(
+        `/my-orders/${orderId}/update-status`,
+        "POST",
+        { status: newStatus },
+        {
+          successCallback: function () {
+            showNotification("订单状态已更新", "success");
+            loadOrders();
+          },
+        },
+      );
+    }
+  }
+</script>
+{% endblock %}
