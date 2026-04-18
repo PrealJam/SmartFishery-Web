@@ -5,6 +5,7 @@ Smart Fishery Management System v2.0 - Flask with Real-time Data
 
 import os
 import sys
+import importlib
 from datetime import datetime, timedelta
 from flask import Flask, render_template, jsonify, request, session, redirect, url_for
 from flask_sqlalchemy import SQLAlchemy
@@ -16,7 +17,23 @@ import logging
 try:
     from hardware_service import init_collector, start_collection, stop_collection, get_stats as get_hardware_stats
     from storage_service import init_storage_service, get_storage_service
-    from custom_parser_template import CustomATKLoraParser
+    try:
+        CustomATKLoraParser = importlib.import_module('custom_parser_template').CustomATKLoraParser
+    except ImportError:
+        class CustomATKLoraParser:
+            """当自定义解析器文件不存在时的降级解析器。"""
+
+            def parse(self, raw_bytes):
+                if isinstance(raw_bytes, (bytes, bytearray)):
+                    hex_data = raw_bytes.hex().upper()
+                else:
+                    hex_data = str(raw_bytes)
+                return {
+                    'raw_data': hex_data,
+                    'parser': 'fallback',
+                    'parsed_at': datetime.utcnow().isoformat()
+                }
+        print("[WARN] custom_parser_template.py 不存在，已使用内置降级解析器")
     
     # 初始化解析器
     parser = CustomATKLoraParser()
@@ -1793,8 +1810,12 @@ def filter_device_logs(device_id):
 def create_export_file(export_type):
     """创建导出文件"""
     try:
-        from openpyxl import Workbook
-        from openpyxl.styles import Font, PatternFill, Alignment
+        openpyxl_module = importlib.import_module('openpyxl')
+        openpyxl_styles_module = importlib.import_module('openpyxl.styles')
+        Workbook = openpyxl_module.Workbook
+        Font = openpyxl_styles_module.Font
+        PatternFill = openpyxl_styles_module.PatternFill
+        Alignment = openpyxl_styles_module.Alignment
         from io import BytesIO
         
         wb = Workbook()
