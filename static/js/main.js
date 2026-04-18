@@ -116,7 +116,7 @@ async function apiCall(endpoint, method = "GET", data = null, options = {}) {
     }
 
     const response = await fetch(`${API_BASE_URL}${endpoint}`, fetchOptions);
-    
+
     // 隐藏加载指示器
     if (options.showLoading !== false) {
       hideLoadingIndicator();
@@ -125,14 +125,17 @@ async function apiCall(endpoint, method = "GET", data = null, options = {}) {
     // 检查响应内容类型
     const contentType = response.headers.get("content-type");
     let result;
-    
+
     if (contentType && contentType.includes("application/json")) {
       result = await response.json();
     } else {
       // 非 JSON 响应（可能是 HTML 错误页面或重定向）
       const text = await response.text();
-      console.error(`API 返回非 JSON 响应: ${endpoint}`, text.substring(0, 200));
-      
+      console.error(
+        `API 返回非 JSON 响应: ${endpoint}`,
+        text.substring(0, 200),
+      );
+
       if (!response.ok) {
         // 如果状态码不是 2xx，可能需要重新登录
         if (response.status === 401 || response.status === 403) {
@@ -141,20 +144,24 @@ async function apiCall(endpoint, method = "GET", data = null, options = {}) {
         }
         throw new Error(`HTTP ${response.status}: ${text.substring(0, 100)}`);
       }
-      
+
       return {
         status: "error",
-        message: "服务器返回无效格式的数据"
+        message: "服务器返回无效格式的数据",
       };
     }
 
     // 检查响应状态
     if (!response.ok || (result && result.status === "error")) {
-      const errorMessage = (result && result.message) || `请求失败 (${response.status})`;
+      const errorMessage =
+        (result && result.message) || `请求失败 (${response.status})`;
       if (options.showError !== false) {
         showToast(errorMessage, "error");
       }
-      if (options.errorCallback && typeof options.errorCallback === "function") {
+      if (
+        options.errorCallback &&
+        typeof options.errorCallback === "function"
+      ) {
         options.errorCallback(result);
       }
       return result || { status: "error", message: errorMessage };
@@ -164,9 +171,12 @@ async function apiCall(endpoint, method = "GET", data = null, options = {}) {
     if (options.successMessage && result && result.status === "success") {
       showToast(options.successMessage, "success");
     }
-    
+
     // 调用成功回调
-    if (options.successCallback && typeof options.successCallback === "function") {
+    if (
+      options.successCallback &&
+      typeof options.successCallback === "function"
+    ) {
       options.successCallback(result);
     }
 

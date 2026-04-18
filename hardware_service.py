@@ -14,7 +14,7 @@ from typing import Optional, Callable
 
 # 硬件协议解析器
 try:
-    from atk_lora_parser import parse_hardware_data
+    from atk_lora_parser import parse_hardware_data  # type: ignore
 except ImportError:
     parse_hardware_data = None
 
